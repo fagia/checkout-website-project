@@ -1,0 +1,47 @@
+---
+
+- name: Install prerequisites
+  import_tasks: install-prerequisites.yml
+
+- set_fact:
+    apache_document_root="/home/{{ params.user.username }}/Downloads/{{ site.hostname | mandatory }}"
+
+- set_fact:
+    site_checkout_dir="{{ apache_document_root }}{{ (wp_path == '/') | ternary('', wp_path) }}"
+
+- name: "Checkout and update git repository for {{ site.hostname }}"
+  git:
+    repo: "{{ site.git_repo_url }}"
+    dest: "{{ site_checkout_dir }}"
+    update: yes
+  become: True
+  become_user: "{{ params.user.username }}"
+  when: site.git_repo_url is defined
+
+- name: "Mirror FTP for {{ site.hostname }}"
+  command: 'lftp {{ site.ftp.host }} -u {{ site.ftp.username }},{{ site.ftp.password }} -e "set ftp:ssl-allow no; glob -d mirror {{ site.ftp.remote_dir }} {{ site_checkout_dir }} --parallel=4 --only-newer --exclude .git; quit;"'
+  become: True
+  become_user: "{{ params.user.username }}"
+  when: site.ftp is defined
+
+- name: "Setup vhost for {{ site.hostname }}"
+  template:
+    src: "apache-vhost.conf.j2"
+    dest: "/etc/apache2/sites-enabled/{{ site.hostname | mandatory }}-vhost.conf"
+    force: yes
+    mode: 0644
+  become: True
+
+- name: "Add /etc/hosts entry to resolve {{ site.hostname }} locally"
+  lineinfile:
+    path: /etc/hosts
+    regexp: ".*{{ site.hostname }}.*"
+    line: "127.0.0.1 {{ site.hostname }}"
+  become: True
+
+- name: Restart apache
+  service:
+    name: apache2
+    state: restarted
+  changed_when: False
+  become: True
