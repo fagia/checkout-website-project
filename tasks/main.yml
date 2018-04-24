@@ -19,7 +19,7 @@
   when: site.git_repo_url is defined
 
 - name: "Mirror FTP for {{ site.hostname }}"
-  command: 'lftp {{ site.ftp.host }} -u {{ site.ftp.username }},{{ site.ftp.password }} -e "set ftp:ssl-allow no; glob -d mirror {{ site.ftp.remote_dir }} {{ site_checkout_dir }} --parallel=4 --only-newer --exclude .git; quit;"'
+  command: 'lftp {{ site.ftp.host }} -u {{ site.ftp.username }},{{ site.ftp.password }} -e "set ftp:ssl-allow no; glob -d mirror {{ site.ftp.remote_dir }} {{ site_checkout_dir }} --parallel=4 --only-newer --exclude .git --exclude node_modules; quit;"'
   become: True
   become_user: "{{ params.user.username }}"
   when: site.ftp is defined
