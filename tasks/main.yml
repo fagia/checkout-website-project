@@ -7,7 +7,7 @@
     apache_document_root="/home/{{ params.user.username }}/Downloads/{{ site.hostname | mandatory }}"
 
 - set_fact:
-    site_checkout_dir="{{ apache_document_root }}{{ (wp_path == '/') | ternary('', wp_path) }}"
+    site_checkout_dir="{{ apache_document_root }}{{ (site.path == '/') | ternary('', site.path) }}"
 
 - name: "Checkout and update git repository for {{ site.hostname }}"
   git:
